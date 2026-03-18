@@ -59,9 +59,9 @@ public class LoanService implements ILoanService {
             throw new IllegalArgumentException("El tipo de préstamo es obligatorio.");
         }
 
-        // Estado inicial obligatorio: IN_STUDY
+        // Estado inicial obligatorio: PENDING
         loan.setLoanId(nextLoanId++);
-        loan.setLoanStatus(LoanStatus.IN_STUDY);
+        loan.setLoanStatus(LoanStatus.PENDING);
         loan.setApprovedAmount(0);
         loan.setInterestRate(0);
         loans.add(loan);
@@ -73,7 +73,7 @@ public class LoanService implements ILoanService {
         detail.put("termMonths", loan.getTermMonths());
         logService.log("LOAN_REQUESTED", requestingUser, String.valueOf(loan.getLoanId()), detail);
 
-        System.out.println("Solicitud de préstamo #" + loan.getLoanId() + " creada. Estado: IN_STUDY");
+        System.out.println("Solicitud de préstamo #" + loan.getLoanId() + " creada. Estado: PENDING");
         return loan;
     }
 
@@ -84,10 +84,10 @@ public class LoanService implements ILoanService {
 
         Loan loan = getLoanById(loanId);
 
-        // Regla de transición: solo se puede aprobar desde IN_STUDY
-        if (loan.getLoanStatus() != LoanStatus.IN_STUDY) {
+        // Regla de transición: solo se puede aprobar desde PENDING
+        if (loan.getLoanStatus() != LoanStatus.PENDING) {
             throw new IllegalStateException(
-                "Solo se puede aprobar un préstamo en estado IN_STUDY. Estado actual: " + loan.getLoanStatus());
+                "Solo se puede aprobar un préstamo en estado PENDING. Estado actual: " + loan.getLoanStatus());
         }
         if (approvedAmount <= 0) {
             throw new IllegalArgumentException("El monto aprobado debe ser mayor a cero.");
@@ -120,10 +120,10 @@ public class LoanService implements ILoanService {
 
         Loan loan = getLoanById(loanId);
 
-        // Regla de transición: solo se puede rechazar desde IN_STUDY
-        if (loan.getLoanStatus() != LoanStatus.IN_STUDY) {
+        // Regla de transición: solo se puede rechazar desde PENDING
+        if (loan.getLoanStatus() != LoanStatus.PENDING) {
             throw new IllegalStateException(
-                "Solo se puede rechazar un préstamo en estado IN_STUDY. Estado actual: " + loan.getLoanStatus());
+                "Solo se puede rechazar un préstamo en estado PENDING. Estado actual: " + loan.getLoanStatus());
         }
 
         LoanStatus previousStatus = loan.getLoanStatus();
@@ -219,7 +219,7 @@ public class LoanService implements ILoanService {
     public List<Loan> getPendingLoans(User analystUser) {
         authService.validateRole(analystUser, SystemRole.INTERNAL_ANALYST);
         return loans.stream()
-                .filter(l -> l.getLoanStatus() == LoanStatus.IN_STUDY)
+                .filter(l -> l.getLoanStatus() == LoanStatus.PENDING)
                 .collect(Collectors.toList());
     }
 

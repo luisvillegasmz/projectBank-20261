@@ -31,7 +31,7 @@ public interface IUserService {
     /**
      * Retorna todos los usuarios del sistema (solo para Analista Interno).
      */
-    List<User> getAllUsers();
+    List<User> getAllUsers(User requestingUser);
 
     /**
      * Cambia el estado de un usuario (Activo, Inactivo, Bloqueado).

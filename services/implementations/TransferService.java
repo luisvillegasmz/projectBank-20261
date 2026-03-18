@@ -70,7 +70,7 @@ public class TransferService implements ITransferService {
 
         if (requiresApproval) {
             // Flujo de aprobación: queda en espera
-            transfer.setTransferStatus(TransferStatus.WAITING_APPROVAL);
+            transfer.setTransferStatus(TransferStatus.PENDING);
             transfers.add(transfer);
 
             Map<String, Object> detail = new HashMap<>();
@@ -78,10 +78,10 @@ public class TransferService implements ITransferService {
             detail.put("sourceAccount", transfer.getSourceAccount());
             detail.put("destinationAccount", transfer.getDestinationAccount());
             detail.put("reason", "Supera el umbral de alto monto: " + HIGH_AMOUNT_THRESHOLD);
-            logService.log("TRANSFER_WAITING_APPROVAL", requestingUser,
+            logService.log("TRANSFER_PENDING", requestingUser,
                     String.valueOf(transfer.getTransferId()), detail);
 
-            System.out.printf("Transferencia #%d creada. Monto %.2f supera umbral → WAITING_APPROVAL%n",
+            System.out.printf("Transferencia #%d creada. Monto %.2f supera umbral → PENDING%n",
                     transfer.getTransferId(), transfer.getAmount());
         } else {
             // Ejecución directa: validar saldo y ejecutar
@@ -98,9 +98,9 @@ public class TransferService implements ITransferService {
         Transfer transfer = getTransferById(transferId);
 
         // Verificar que esté en el estado correcto
-        if (transfer.getTransferStatus() != TransferStatus.WAITING_APPROVAL) {
+        if (transfer.getTransferStatus() != TransferStatus.PENDING) {
             throw new IllegalStateException(
-                "Solo se pueden aprobar transferencias en estado WAITING_APPROVAL. Estado actual: "
+                "Solo se pueden aprobar transferencias en estado PENDING. Estado actual: "
                 + transfer.getTransferStatus());
         }
 
@@ -133,9 +133,9 @@ public class TransferService implements ITransferService {
 
         Transfer transfer = getTransferById(transferId);
 
-        if (transfer.getTransferStatus() != TransferStatus.WAITING_APPROVAL) {
+        if (transfer.getTransferStatus() != TransferStatus.PENDING) {
             throw new IllegalStateException(
-                "Solo se pueden rechazar transferencias en estado WAITING_APPROVAL.");
+                "Solo se pueden rechazar transferencias en estado PENDING.");
         }
 
         transfer.setTransferStatus(TransferStatus.REJECTED);
@@ -157,7 +157,7 @@ public class TransferService implements ITransferService {
         LocalDateTime now = LocalDateTime.now();
 
         transfers.stream()
-                .filter(t -> t.getTransferStatus() == TransferStatus.WAITING_APPROVAL)
+                .filter(t -> t.getTransferStatus() == TransferStatus.PENDING)
                 .filter(t -> ChronoUnit.MINUTES.between(t.getCreationDate(), now) >= 60)
                 .forEach(t -> {
                     t.setTransferStatus(TransferStatus.EXPIRED);
@@ -199,7 +199,7 @@ public class TransferService implements ITransferService {
         checkAndExpireTransfers();
 
         return transfers.stream()
-                .filter(t -> t.getTransferStatus() == TransferStatus.WAITING_APPROVAL)
+                .filter(t -> t.getTransferStatus() == TransferStatus.PENDING)
                 .filter(t -> {
                     // Supervisor de empresa solo ve las de su empresa
                     if (requestingUser.getSystemRole() == SystemRole.CORPORATE_SUPERVISOR) {
